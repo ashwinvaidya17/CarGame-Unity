@@ -15,7 +15,8 @@ public class Logger : MonoBehaviour {
     string text;
     List<GameObject> CollidableObjects = new List<GameObject>();
     List<GameObject> Cars = new List<GameObject>();
-    int numberOfCars, numberOfCollidableObjects;
+    public GameObject[] Checkpoints = new GameObject[10];
+    int numberOfCars, numberOfCollidableObjects, checkpointsCrossed;
 
 
     private void FixedUpdate()
@@ -37,6 +38,11 @@ public class Logger : MonoBehaviour {
     }
     // Use this for initialization
     void Start () {
+        checkpointsCrossed = 0;
+        string path = "./log.txt";
+        StreamWriter writer = new StreamWriter(path, true);
+        writer.WriteLine("NoOfTrafficSignalsBroken, collisionCars, numberOfCars, collisionPedestrians, collisionOther, numberOfCollidableObjects, OffroadCounter,checkpointsCrossed\n");
+        writer.Close();
         InvokeRepeating("UpdateGUI", 0f, 1.0f);
         numberOfCollidableObjects = GameObject.FindGameObjectsWithTag("Other").Length;
         numberOfCars = GameObject.FindGameObjectsWithTag("Cars").Length;
@@ -49,7 +55,8 @@ public class Logger : MonoBehaviour {
                         + "\nCollision(Cars): " + collisionCars +"/"+ numberOfCars
                         + "\nCollision(Pedestrian): " + collisionPedestrians
                         + "\nCollision(Other): " + collisionOther + "/" + numberOfCollidableObjects
-                        + "\nOffroad count: " + OffroadCounter;
+                        + "\nOffroad count: " + OffroadCounter
+                        + "\nCheckpoints Crossed: "+ checkpointsCrossed+"/10";
         DisplayText.text = text;
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -62,7 +69,6 @@ public class Logger : MonoBehaviour {
     {
         if (other.gameObject.tag == "Other")
         {
-            Debug.Log("Other");
            if (CollidableObjects.Contains(other.gameObject))
                 return;
             CollidableObjects.Add(other.gameObject);
@@ -79,6 +85,19 @@ public class Logger : MonoBehaviour {
             Cars.Add(other.gameObject);
             collisionCars++;
         }
+        else if(other.gameObject.tag == "Checkpoint")
+        {
+            checkpointsCrossed++;
+            other.gameObject.SetActive(false);
+            if(checkpointsCrossed == 10)
+            {
+                StartCoroutine(Completed());
+            }
+            else
+            {
+                Checkpoints[checkpointsCrossed].SetActive(true);
+            }
+        }
     }
     private void OnTriggerExit(Collider other)
     {
@@ -94,8 +113,15 @@ public class Logger : MonoBehaviour {
     {
         string path = "./log.txt";
         StreamWriter writer = new StreamWriter(path, true);
-        writer.WriteLine(text + "\n--------------\n");
+        writer.WriteLine(NoOfTrafficSignalsBroken + "," + collisionCars + "," + numberOfCars + "," + collisionPedestrians + "," + collisionOther + "," + numberOfCollidableObjects + "," + OffroadCounter + "," + checkpointsCrossed+ "\n");
         writer.Close();
 
+    }
+    IEnumerator Completed()
+    {
+        DisplayText.text = "Thank you for playing!\n Game shutting down in 5 seconds\n";
+        DisplayText = null; //Not a good way to disable update but will work for now
+        yield return new WaitForSeconds(5);
+        Application.Quit();
     }
 }
