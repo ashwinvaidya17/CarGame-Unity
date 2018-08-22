@@ -15,8 +15,10 @@ public class Logger : MonoBehaviour {
     string text;
     List<GameObject> CollidableObjects = new List<GameObject>();
     List<GameObject> Cars = new List<GameObject>();
-    public GameObject[] Checkpoints = new GameObject[10];
-    int numberOfCars, numberOfCollidableObjects, checkpointsCrossed;
+    int numberOfCars, numberOfCollidableObjects;
+    public int LapCount = 1;
+    public GameObject water;
+    public GameObject barricades;
 
 
     private void FixedUpdate()
@@ -28,7 +30,6 @@ public class Logger : MonoBehaviour {
         if (Physics.Raycast(transform.position, Vector3.down, out hit, 10))
             if (hit.collider.gameObject.tag != "Road" && isOffroad == false)
             {
-                OffroadCounter++;
                 isOffroad = true;
             }
             else if (hit.collider.gameObject.tag == "Road" && isOffroad == true)
@@ -38,25 +39,24 @@ public class Logger : MonoBehaviour {
     }
     // Use this for initialization
     void Start () {
-        checkpointsCrossed = 0;
-        string path = "./log.txt";
+        string path = Application.dataPath + "/log_" + LapCount + ".csv";
         StreamWriter writer = new StreamWriter(path, true);
-        writer.WriteLine("NoOfTrafficSignalsBroken, collisionCars, numberOfCars, collisionPedestrians, collisionOther, numberOfCollidableObjects, OffroadCounter,checkpointsCrossed\n");
+        writer.WriteLine("Speed,collisionCars,collisionPedestrians,collisionOther,isOffRoad\n");
         writer.Close();
         InvokeRepeating("UpdateGUI", 0f, 1.0f);
         numberOfCollidableObjects = GameObject.FindGameObjectsWithTag("Other").Length;
         numberOfCars = GameObject.FindGameObjectsWithTag("Cars").Length;
+        
 	}
 
     private void Update()
     {
-        text = "Speed: " + speed +
-                        "\nTraffic Lights Broken: " + NoOfTrafficSignalsBroken
-                        + "\nCollision(Cars): " + collisionCars +"/"+ numberOfCars
+        text = "Speed: " + speed
+                        + "\nCollision(Cars): " + collisionCars
                         + "\nCollision(Pedestrian): " + collisionPedestrians
-                        + "\nCollision(Other): " + collisionOther + "/" + numberOfCollidableObjects
-                        + "\nOffroad count: " + OffroadCounter
-                        + "\nCheckpoints Crossed: "+ checkpointsCrossed+"/10";
+                        + "\nCollision(Other): " + collisionOther
+                        + "\n Is Offroad: " + isOffroad
+                        + "\n Lap Count " + LapCount + "/4";
         DisplayText.text = text;
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -85,35 +85,27 @@ public class Logger : MonoBehaviour {
             Cars.Add(other.gameObject);
             collisionCars++;
         }
-        else if(other.gameObject.tag == "Checkpoint")
+        else if(other.gameObject.tag == "Finish")
         {
-            checkpointsCrossed++;
-            other.gameObject.SetActive(false);
-            if(checkpointsCrossed == 10)
+            Debug.Log("In Finish");
+            LapCount++;
+            if(LapCount<=4)
             {
-                StartCoroutine(Completed());
+                ResetVehicle();
             }
             else
             {
-                Checkpoints[checkpointsCrossed].SetActive(true);
+                StartCoroutine(Completed());
             }
         }
     }
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.tag == "TrafficLight")
-        {
-            if (other.gameObject.GetComponentInParent<TrafficLights>().currentState == 1) //red
-                NoOfTrafficSignalsBroken++;
-        }
-        
-    }
+
 
     void UpdateGUI()
     {
-        string path = "./log.txt";
+        string path = Application.dataPath + "/log_"+LapCount+".csv";
         StreamWriter writer = new StreamWriter(path, true);
-        writer.WriteLine(NoOfTrafficSignalsBroken + "," + collisionCars + "," + numberOfCars + "," + collisionPedestrians + "," + collisionOther + "," + numberOfCollidableObjects + "," + OffroadCounter + "," + checkpointsCrossed+ "\n");
+        writer.WriteLine(speed+"," + collisionCars +   "," + collisionPedestrians + "," + collisionOther + "," + isOffroad + "\n");
         writer.Close();
 
     }
@@ -123,5 +115,30 @@ public class Logger : MonoBehaviour {
         DisplayText = null; //Not a good way to disable update but will work for now
         yield return new WaitForSeconds(5);
         Application.Quit();
+    }
+
+    void ResetVehicle()
+    {
+        this.transform.root.GetComponent<Rigidbody>().transform.position = new Vector3(-111.61f, 0.17f, -138.3f);
+        this.transform.root.GetComponent<Rigidbody>().transform.eulerAngles = new Vector3(0, 90, 0);
+        this.transform.root.GetComponent<Rigidbody>().velocity = new Vector3(0,0,0);
+        switch (LapCount)
+        {
+            case 2: //without baricades
+                barricades.SetActive(false);
+                break;
+            case 3: //with baricades and rain
+                barricades.SetActive(true);
+                water.SetActive(true);
+                this.transform.root.GetComponent<Rigidbody>().angularDrag = 0;
+                this.transform.root.GetComponent<Rigidbody>().drag = 0;
+                break;
+            case 4: //without barricades and rain
+                barricades.SetActive(false);
+                water.SetActive(true);
+                this.transform.root.GetComponent<Rigidbody>().angularDrag = 0;
+                this.transform.root.GetComponent<Rigidbody>().drag = 0;
+                break;
+        }
     }
 }

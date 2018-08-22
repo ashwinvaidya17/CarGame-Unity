@@ -33,17 +33,17 @@ public class NPCWalk : MonoBehaviour {
     {
         if(_destination !=null)
         {
-            if (!Flag)
+            if (Flag==false)
             {
                 _currTarget = _destination.transform.position;
                 _navMeshAgent.SetDestination(_currTarget);
-                Flag = false;
+                Flag = true;
             }
             else
             {
                 _currTarget = startPos;
                 _navMeshAgent.SetDestination(_currTarget);
-                Flag = true;
+                Flag = false;
             }
         }
     }

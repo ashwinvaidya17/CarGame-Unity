@@ -3,6 +3,7 @@ A simple car game for logging user playing data
 This game was create to enable us to gather data related to our research paper.
 
 ![](Screenshot.png)
+![](Screenshot2.png)
 
 ## Prerequisites
 Few assets are not included in this directory. They were obtained from asset store and the internet.
